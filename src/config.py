@@ -42,8 +42,8 @@ class Settings(BaseSettings):
     onnx_model_path: Path = PROJECT_ROOT / "models" / "classifier_head.onnx"
     joblib_model_path: Path = PROJECT_ROOT / "models" / "classifier_head.joblib"
 
-    # MLflow Settings
-    mlflow_tracking_uri: str = f"file:///{PROJECT_ROOT.as_posix()}/mlruns"
+    # MLflow Settings (Uses SQLite backend for MLflow 3.x model registry support)
+    mlflow_tracking_uri: str = f"sqlite:///{(PROJECT_ROOT / 'mlflow.db').as_posix()}"
     mlflow_experiment_name: str = "ai-image-detector"
     mlflow_model_name: str = "ai-image-detector-clip"
 

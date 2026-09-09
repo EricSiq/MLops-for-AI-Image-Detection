@@ -32,6 +32,8 @@ models/*
 
 mlruns/
 .mlruns/
+*.db
+mlflow.db
 reports/
 drift_reports/
 
