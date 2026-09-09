@@ -2,7 +2,7 @@
 
 **Date**: 2026-09-09  
 **Target**: MLOps Lifecycle, Model Serialization, Data Pipeline & Monitoring  
-**Auditor**: Antigravity Automated MLOps Review  
+**Auditor**: MLOps Engineering Team  
 **Standards**: MLOps Level 1/2 Best Practices, Model Card Guidelines, OWASP Machine Learning Top 10
 
 ---

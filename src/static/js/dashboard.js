@@ -213,7 +213,7 @@ function renderGallery(items) {
         <div class="card-thumb-container">
           <img class="card-thumb" src="${imgSrc}" alt="Forensic sample" loading="lazy" />
           <div class="card-tag-overlay ${isAI ? 'ai' : 'real'}">
-            ${isAI ? 'SYNTHETIC AI' : 'AUTHENTIC'} • ${Math.round(item.ai_probability * 100)}%
+            ${isAI ? 'SYNTHETIC AI' : 'AUTHENTIC'} | ${Math.round(item.ai_probability * 100)}%
           </div>
         </div>
         <div class="card-content">
@@ -227,7 +227,7 @@ function renderGallery(items) {
           <div class="card-footer-mono">
             <span>${item.width ? `${item.width}x${item.height}` : 'RGB'}</span>
             <span>${item.sha256 ? item.sha256.substring(0, 8) : 'SHA256'}</span>
-            <span style="color: var(--brand-indigo);">Inspect ↗</span>
+            <span style="color: var(--brand-indigo);">Inspect</span>
           </div>
         </div>
       </div>

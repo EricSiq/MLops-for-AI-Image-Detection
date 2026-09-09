@@ -2,7 +2,7 @@
 
 **Date**: 2026-09-09  
 **Target**: AI Image Detection MLOps Pipeline (`src/`)  
-**Auditor**: Antigravity Automated Security Review  
+**Auditor**: Pipeline Security Engineering Team  
 **Tooling**: Bandit v1.9.4 AST Analyzer, Code Inspection, SSRF Penetration Assessment
 
 ---
