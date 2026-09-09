@@ -156,18 +156,20 @@ class AIImagePredictor:
     ) -> Dict[str, Any]:
         """
         Predicts whether a single image is Real or AI-generated.
-
-        Returns:
-            Dict containing:
-              - label: 'REAL' or 'AI_GENERATED'
-              - ai_probability: float in [0.0, 1.0]
-              - real_probability: float in [0.0, 1.0]
-              - confidence: float in [0.5, 1.0]
-              - fft_spectrum: list of float values (if include_fft=True)
+        Includes latency telemetry and deep forensic frequency artifacts.
         """
+        import time
+        from src.preprocess import generate_fft_magnitude_heatmap_base64
+
+        t0 = time.perf_counter()
         image = load_image_safely(image_source)
+        t_load = time.perf_counter()
+
         embedding = self.feature_extractor.extract_features_pil([image], batch_size=1)
+        t_embed = time.perf_counter()
+
         probs = self._predict_embeddings(embedding)[0]
+        t_infer = time.perf_counter()
 
         real_prob = float(probs[0])
         ai_prob = float(probs[1])
@@ -175,16 +177,24 @@ class AIImagePredictor:
         label = "AI_GENERATED" if ai_prob >= 0.5 else "REAL"
         confidence = max(real_prob, ai_prob)
 
+        feature_latency_ms = round((t_embed - t_load) * 1000, 2)
+        inference_latency_ms = round((t_infer - t_embed) * 1000, 2)
+        total_latency_ms = round((t_infer - t0) * 1000, 2)
+
         result: Dict[str, Any] = {
             "label": label,
             "ai_probability": round(ai_prob, 4),
             "real_probability": round(real_prob, 4),
             "confidence": round(confidence, 4),
+            "latency_ms": total_latency_ms,
+            "feature_latency_ms": feature_latency_ms,
+            "inference_latency_ms": inference_latency_ms,
         }
 
         if include_fft:
             spectrum = compute_radial_fft_spectrum(image, num_bins=32)
             result["fft_spectrum"] = [round(float(v), 4) for v in spectrum]
+            result["fft_heatmap"] = generate_fft_magnitude_heatmap_base64(image, size=128)
 
         return result
 
@@ -192,13 +202,20 @@ class AIImagePredictor:
         self,
         images: List[Image.Image],
         batch_size: int = 32,
+        include_fft: bool = False,
     ) -> List[Dict[str, Any]]:
         """Batched prediction for multiple PIL images."""
         if not images:
             return []
 
+        import time
+        from src.preprocess import generate_fft_magnitude_heatmap_base64
+
+        t0 = time.perf_counter()
         embeddings = self.feature_extractor.extract_features_pil(images, batch_size=batch_size)
         probs = self._predict_embeddings(embeddings)
+        total_time_ms = round((time.perf_counter() - t0) * 1000, 2)
+        avg_latency = round(total_time_ms / len(images), 2)
 
         results = []
         for i in range(len(images)):
@@ -207,12 +224,20 @@ class AIImagePredictor:
             label = "AI_GENERATED" if ai_prob >= 0.5 else "REAL"
             confidence = max(real_prob, ai_prob)
 
-            results.append(
-                {
-                    "label": label,
-                    "ai_probability": round(ai_prob, 4),
-                    "real_probability": round(real_prob, 4),
-                    "confidence": round(confidence, 4),
-                }
-            )
+            res = {
+                "label": label,
+                "ai_probability": round(ai_prob, 4),
+                "real_probability": round(real_prob, 4),
+                "confidence": round(confidence, 4),
+                "latency_ms": avg_latency,
+            }
+
+            if include_fft:
+                res["fft_spectrum"] = [
+                    round(float(v), 4)
+                    for v in compute_radial_fft_spectrum(images[i], num_bins=32)
+                ]
+                res["fft_heatmap"] = generate_fft_magnitude_heatmap_base64(images[i], size=128)
+
+            results.append(res)
         return results

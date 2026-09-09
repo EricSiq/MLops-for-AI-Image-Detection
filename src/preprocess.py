@@ -149,3 +149,48 @@ def compute_radial_fft_spectrum(
     # Normalize profile to zero-mean unit-variance
     norm_profile = (profile - np.mean(profile)) / (np.std(profile) + 1e-7)
     return norm_profile.astype(np.float32)
+
+
+def generate_fft_magnitude_heatmap_base64(
+    image: Image.Image,
+    size: int = 128,
+) -> str:
+    """
+    Generates a 2D Fourier magnitude spectrum heatmap as a base64 Data URI (PNG).
+    Visualizes high-frequency checkerboard grid artifacts typical of synthetic generators.
+    """
+    import base64
+    from io import BytesIO
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.cm as cm
+
+    gray = image.convert("L").resize((size, size), resample=Image.Resampling.BICUBIC)
+    arr = np.asarray(gray, dtype=np.float32) / 255.0
+
+    # 2D Fast Fourier Transform
+    fft2 = np.fft.fft2(arr)
+    fft_shifted = np.fft.fftshift(fft2)
+    magnitude = np.log(np.abs(fft_shifted) + 1e-7)
+
+    # Normalize magnitude to [0, 1]
+    min_val = float(np.min(magnitude))
+    max_val = float(np.max(magnitude))
+    if max_val - min_val > 1e-7:
+        norm_mag = (magnitude - min_val) / (max_val - min_val)
+    else:
+        norm_mag = np.zeros_like(magnitude)
+
+    # Apply magma colormap for high forensic contrast
+    try:
+        cmap = matplotlib.colormaps["magma"]
+    except (AttributeError, KeyError):
+        cmap = cm.get_cmap("magma")
+
+    rgba_img = (cmap(norm_mag) * 255).astype(np.uint8)
+    pil_heatmap = Image.fromarray(rgba_img, mode="RGBA")
+
+    buf = BytesIO()
+    pil_heatmap.save(buf, format="PNG", optimize=True)
+    encoded = base64.b64encode(buf.getvalue()).decode("ascii")
+    return f"data:image/png;base64,{encoded}"

@@ -70,3 +70,19 @@ def test_compute_radial_fft_spectrum(sample_pil_image):
     assert spectrum.shape == (32,)
     assert spectrum.dtype == np.float32
     assert not np.isnan(spectrum).any()
+
+
+def test_generate_fft_magnitude_heatmap_base64(sample_pil_image):
+    """Test 2D Fourier magnitude heatmap generation as base64 Data URI."""
+    from src.preprocess import generate_fft_magnitude_heatmap_base64
+    import base64
+
+    data_uri = generate_fft_magnitude_heatmap_base64(sample_pil_image, size=128)
+    assert isinstance(data_uri, str)
+    assert data_uri.startswith("data:image/png;base64,")
+
+    raw_b64 = data_uri.split(",", 1)[1]
+    decoded_bytes = base64.b64decode(raw_b64)
+    img = Image.open(io.BytesIO(decoded_bytes))
+    assert img.size == (128, 128)
+    assert img.mode == "RGBA"
