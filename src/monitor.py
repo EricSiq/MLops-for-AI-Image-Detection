@@ -89,8 +89,12 @@ def generate_drift_report(
     # 2. Try generating Evidently report
     evidently_success = False
     try:
-        from evidently.report import Report
-        from evidently.metric_preset import DataDriftPreset
+        try:
+            from evidently import Report
+            from evidently.presets import DataDriftPreset
+        except ImportError:
+            from evidently.report import Report  # type: ignore
+            from evidently.metric_preset import DataDriftPreset  # type: ignore
 
         ref_df = pd.DataFrame(
             reference_embeddings[:, :n_dims],
@@ -102,8 +106,11 @@ def generate_drift_report(
         )
 
         report = Report(metrics=[DataDriftPreset()])
-        report.run(reference_data=ref_df, current_data=cur_df)
-        report.save_html(str(html_path))
+        res = report.run(reference_data=ref_df, current_data=cur_df)
+        if hasattr(res, "save_html"):
+            res.save_html(str(html_path))
+        elif hasattr(report, "save_html"):
+            report.save_html(str(html_path))
         evidently_success = True
         logger.info(f"Evidently AI HTML drift report generated at {html_path}.")
     except Exception as err:
