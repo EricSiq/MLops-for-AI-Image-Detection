@@ -4,10 +4,10 @@
 [![MLflow](https://img.shields.io/badge/MLflow-Tracking%20%26%20Registry-0194E2.svg)](https://mlflow.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-Serving%20%26%20UI-009688.svg)](https://fastapi.tiangolo.com/)
 [![ONNX](https://img.shields.io/badge/ONNX-High--Performance%20Runtime-005CED.svg)](https://onnxruntime.ai/)
-[![Tests](https://img.shields.io/badge/Tests-23%2F23%20Passing-success.svg)](#testing)
+[![Tests](https://img.shields.io/badge/Tests-27%2F27%20Passing-success.svg)](#testing)
 [![Security](https://img.shields.io/badge/Security-0%20Vulnerabilities-brightgreen.svg)](#security-audits)
 
-A production-grade, local MLOps pipeline for extracting and detecting **AI-generated vs. authentic images** across web pages. Powered by frozen **CLIP ViT-B/32 visual embeddings**, a calibrated linear classification head, **MLflow 3.x tracking & model registry**, high-speed **ONNX Runtime** inference, an **SSRF-hardened web scraper with perceptual deduplication**, and **Evidently AI data drift monitoring**.
+A production-grade, local MLOps pipeline and **AI Image Forensics Studio** for extracting, inspecting, and detecting **synthetic AI-generated vs. authentic images** across web pages and batch uploads. Powered by frozen **CLIP ViT-B/32 visual embeddings**, a calibrated linear classification head, **2D Fourier frequency-artifact heatmaps**, **MLflow 3.x tracking & model registry**, high-speed **ONNX Runtime** inference, an **SSRF-hardened web scraper with perceptual deduplication**, and **Evidently AI data drift monitoring**.
 
 ---
 
@@ -25,13 +25,14 @@ flowchart TD
         HEAD --> ONNX[ONNX Export & Parity Check]
     end
 
-    subgraph Ingestion & Serving ["Serving & Production Inference"]
+    subgraph Ingestion & Serving ["Serving & Production Forensics"]
         WEB[Target Webpage URL] --> SCRAPE[SSRF-Protected Scraper]
         SCRAPE --> DEDUP[Perceptual Hashing Deduplication]
         DEDUP --> MANIFEST[Image Manifest]
         MANIFEST --> PRED[ONNX / Joblib Inference Engine]
-        PRED --> API[FastAPI Endpoints: /analyze, /predict]
-        API --> UI[Interactive Glassmorphism Web Dashboard]
+        DROP[Batch Local Files Dropzone] --> PRED
+        PRED --> API[FastAPI Endpoints: /analyze, /predict, /predict-batch]
+        API --> UI[Obsidian Forensics Studio & Multi-Tab Dashboard]
     end
 
     subgraph Monitoring ["Continuous MLOps Monitoring"]
@@ -43,41 +44,39 @@ flowchart TD
 
 ---
 
-## ✨ Key Features
+## ✨ Key Features & v0.2 Enhancements
 
-1. **Frozen CLIP ViT Backbone + Calibrated Head**:
+1. **Human-Crafted Obsidian Forensic Studio Dashboard**:
+   - Multi-tab control center: **Webpage Inspector**, **Forensic Studio & Dropzone**, and **MLOps Telemetry & Drift Hub**.
+   - Built with a graphite/obsidian design system (deep canvas `#090b10`, precision typography with Inter and JetBrains Mono, micro-animations).
+   - One-click sample test presets (Wikipedia AI article, Unsplash photography, Lexica synthetic gallery).
+   - Real-time telemetry badges: active inference engine (`ONNX RUNTIME`), hardware device, model registry tag, average latency ms.
+   - Client-side filtering pills: *All*, *Synthetic AI*, *Authentic Natural*, *Uncertain (40-60%)*, and *High Confidence (>85%)*.
+   - Live search by filename or SHA256 and multi-criteria sorting (AI probability, confidence, resolution).
+   - One-click export to **JSON Manifest** or **CSV Summary**.
+
+2. **Deep Frequency Forensic Inspection Modal**:
+   - Click any image card to open the slide-over deep inspection dialog.
+   - **Dual-View Switcher**: Instant toggle between the natural RGB image and its **2D Fourier Artifact Spectrum Heatmap** (magma colormap) to visually expose periodic checkerboard grid artifacts left by generative diffusion and GAN upsampling layers.
+   - **Interactive Chart.js Frequency Curve**: 32-bin azimuthal radial power spectrum plotting energy from DC low frequency to Nyquist high frequency with synthetic anomaly bands.
+   - Complete cryptographic metadata table: SHA-256 hash, perceptual pHash, dHash, resolution dimensions, inference latency breakdown.
+
+3. **Multi-Image Drag-and-Drop Forensic Studio**:
+   - `POST /predict-batch`: Drop multiple local image files simultaneously for parallel feature extraction and calibrated classification without needing an external URL.
+
+4. **Frozen CLIP ViT Backbone + Calibrated Head**:
    - Uses OpenAI's `clip-vit-base-patch32` image encoder to project images into 512-dimensional normalized hyperspherical embeddings.
-   - LogisticRegression / Linear Probe classifier head trains in seconds on CPU or GPU.
-   - 2D FFT radial power spectrum extraction detects high-frequency periodic grid artifacts characteristic of generative diffusion and GAN architectures.
-   - Hardware detection probe automatically handles novel architectures (e.g. NVIDIA Blackwell sm_120) with graceful multi-threaded CPU fallback.
+   - Hardware detection probe automatically tests kernel execution to detect unsupported GPU architectures (such as Blackwell sm_120) and seamlessly falls back to multi-threaded CPU.
 
-2. **MLflow 3.x Experiment Tracking & Model Registry**:
+5. **MLflow 3.x Experiment Tracking & Model Registry**:
    - Zero-server local SQLite backend (`sqlite:///mlflow.db`).
    - Tracks hyperparameters, accuracy, precision, recall, F1, ROC-AUC, confusion matrices, and ROC curves.
    - Logs formal MLflow model signatures for strict runtime input/output schema validation.
    - Automatic registration and versioning under `ai-image-detector-clip`.
 
-3. **High-Performance ONNX Export & Cryptographic Integrity**:
-   - Seamless ONNX graph export enables zero-Python-overhead inference with `onnxruntime`.
-   - Cryptographic SHA256 checksum signatures (`.sha256`) prevent deserialization attacks and verify artifact integrity before loading.
-
-4. **SSRF-Hardened Web Scraper with Perceptual Deduplication**:
-   - Parses `<img>`, `data-src`, `<source>`, and `srcset` tags.
-   - Hardened against Server-Side Request Forgery (SSRF): blocks private IPv4/IPv6 ranges, link-local, loopback, and cloud metadata endpoints (`169.254.169.254`).
-   - Validates each hop in HTTP redirects (preventing SSRF via Open Redirects).
-   - Perceptual hashing (pHash and dHash) eliminates near-duplicate images with Hamming distance filtering.
-   - Safe streaming with strict 15MB file size limits and image decompression bomb guards (`Image.MAX_IMAGE_PIXELS`).
-
-5. **FastAPI Serving & Sleek Web Dashboard**:
-   - `POST /analyze`: Scrapes any URL, deduplicates images, classifies each image, and returns structured probabilities.
-   - `POST /predict`: Direct image upload endpoint for instant classification.
-   - `GET /health`: Health status and active runtime provider details.
-   - `GET /`: Interactive web interface featuring dark-mode glassmorphism, responsive image cards, real-time progress meters, and AI probability breakdown.
-
-6. **Data Drift & Model Monitoring (Evidently AI)**:
-   - Tracks feature distribution shift between reference training data and live inference batches.
-   - Two-sample Kolmogorov-Smirnov and Wasserstein distance tests.
-   - Generates standalone, interactive HTML drift reports and machine-readable JSON metrics.
+6. **Continuous Monitoring with Evidently AI**:
+   - Integrated directly into the dashboard telemetry hub (`/reports/drift` and `/monitoring/status`).
+   - Two-sample Kolmogorov-Smirnov and Wasserstein distance tests tracking embedding drift and live prediction shift.
 
 ---
 
