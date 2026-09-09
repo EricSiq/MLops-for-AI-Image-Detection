@@ -23,6 +23,7 @@ scraped_images/
 *.jpg
 *.jpeg
 *.webp
+!mlops_architecture_diagram.png
 !src/static/**/*
 !tests/fixtures/**/*
 

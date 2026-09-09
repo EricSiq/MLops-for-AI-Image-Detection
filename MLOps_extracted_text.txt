@@ -1,0 +1,330 @@
+=== PAGE 1 ===
+MLOps – Scenario-Based Case Study 
+Assignment 
+Course: Machine Learning Operations (MLOps) 
+Assignment Type: Case Study / Scenario-Based 
+Submission Deadline: 10 September 2026, 5:00 PM 
+Total Marks: 07 
+Mode: Individual  
+ 
+1. Assignment Objective 
+The objective of this assignment is to understand how Machine Learning models are 
+developed, deployed, monitored, and maintained in real-world production environments. 
+Students are required to analyze a given business scenario and design an appropriate MLOps 
+workflow/pipeline for solving the problem. 
+The assignment is inspired by real-world MLOps use cases such as fraud detection, demand 
+forecasting, predictive maintenance, recommendation systems, customer-support automation, 
+anomaly detection, churn prediction, and computer-vision quality inspection. 
+ 
+2. Case Study Scenarios 
+Choose ONE of the following scenarios. 
+Scenario 1: Online Payment Fraud Detection 
+A digital payment company processes thousands of transactions every minute. The company 
+wants to develop an ML model that identifies potentially fraudulent transactions in real time. 
+The model should classify a transaction as: 
+• Genuine 
+• Suspicious 
+• Fraudulent 
+However, fraud patterns change frequently, and a model that performs well today may 
+become less accurate over time. 
+Your Task: 
+Design an MLOps solution that explains: 
+
+=== PAGE 2 ===
+1. How transaction data will be collected. 
+2. How data will be preprocessed. 
+3. How the fraud detection model will be trained. 
+4. How the model will be deployed for real-time prediction. 
+5. How model performance will be monitored. 
+6. How the model will be retrained when fraud patterns change. 
+7. How model versions will be managed. 
+8. How a failed model deployment can be rolled back. 
+ 
+Scenario 2: Retail Demand Forecasting 
+An e-commerce company wants to predict the demand for different products for the next 7 
+days. 
+The company has historical information about: 
+• Product sales 
+• Price 
+• Discounts 
+• Festivals 
+• Seasons 
+• Location 
+• Customer demand 
+The company wants to reduce both stock-outs and excess inventory. 
+Your Task: 
+Design an MLOps pipeline for the demand forecasting system. 
+Your solution should explain: 
+1. Data collection and storage. 
+2. Data preprocessing and feature engineering. 
+3. Model training. 
+4. Model evaluation. 
+5. Batch prediction. 
+6. Model deployment. 
+7. Automated retraining. 
+8. Monitoring of prediction accuracy. 
+9. Handling of data drift. 
+10. Important business KPIs. 
+ 
+Scenario 3: Predictive Maintenance in Manufacturing 
+A manufacturing company has machines equipped with sensors that continuously record: 
+
+=== PAGE 3 ===
+• Temperature 
+• Vibration 
+• Pressure 
+• Operating hours 
+• Machine speed 
+The company wants to predict whether a machine is likely to fail within the next 24 hours. 
+Unexpected machine failures result in significant production losses. 
+Your Task: 
+Design an end-to-end MLOps solution. 
+Explain: 
+1. How sensor data will be collected. 
+2. How time-series data will be processed. 
+3. What features can be extracted. 
+4. Which ML model you would consider. 
+5. How the model will be trained and evaluated. 
+6. Whether you would use edge or cloud deployment and why. 
+7. How model performance will be monitored. 
+8. How new failure data will be used for retraining. 
+9. How model updates will be deployed safely. 
+10. What KPIs should be monitored. 
+ 
+Scenario 4: Customer Churn Prediction 
+A telecom company wants to identify customers who are likely to discontinue their 
+subscription. 
+Available data includes: 
+• Customer age 
+• Subscription plan 
+• Monthly bill 
+• Number of complaints 
+• Call/data usage 
+• Payment history 
+• Customer service interactions 
+The company wants to identify high-risk customers and offer them suitable retention 
+schemes. 
+Your Task: 
+
+=== PAGE 4 ===
+Design an MLOps pipeline for customer churn prediction. 
+Your solution should cover: 
+1. Data collection. 
+2. Data preprocessing. 
+3. Feature engineering. 
+4. Model training. 
+5. Model evaluation. 
+6. Model deployment. 
+7. Batch prediction. 
+8. Monitoring. 
+9. Retraining strategy. 
+10. A/B testing of retention campaigns. 
+ 
+Scenario 5: Product Recommendation System 
+An online shopping platform wants to recommend relevant products to customers based on 
+their browsing and purchasing behavior. 
+The system should consider: 
+• Previous purchases 
+• Product views 
+• Search history 
+• Ratings 
+• Customer preferences 
+• Similar products 
+The recommendation system needs to continuously learn from new customer interactions. 
+Your Task: 
+Design an MLOps architecture for this recommendation system. 
+Discuss: 
+1. Data collection. 
+2. Feature engineering. 
+3. Model training. 
+4. Model evaluation. 
+5. Recommendation serving. 
+6. Real-time vs batch processing. 
+7. Model deployment. 
+8. A/B testing. 
+9. Monitoring. 
+10. Retraining and model versioning. 
+
+=== PAGE 5 ===
+ 
+Scenario 6: Computer Vision Quality Inspection 
+A manufacturing company wants to automatically detect defective products using cameras 
+installed on its production line. 
+The ML model should classify products as: 
+• Good 
+• Defective 
+However, lighting conditions, camera positions, and product designs may change over time. 
+Your Task: 
+Design an MLOps pipeline for the computer vision system. 
+Explain: 
+1. Image data collection. 
+2. Image preprocessing. 
+3. Dataset labeling. 
+4. Model training. 
+5. Model evaluation. 
+6. Model deployment. 
+7. Monitoring. 
+8. Handling data/model drift. 
+9. Retraining. 
+10. Safe deployment of updated models. 
+ 
+3. Common Requirements for All Scenarios 
+Your case study must include the following components: 
+A. Problem Definition 
+Clearly explain: 
+• What is the business problem? 
+• Why is ML required? 
+• Who will use the prediction? 
+• What is the expected outcome? 
+B. Data Pipeline 
+
+=== PAGE 6 ===
+Explain: 
+Data Source → Data Collection → Data Storage → Data Preprocessing → Feature 
+Engineering 
+C. ML Pipeline 
+Explain: 
+Training Data → Model Training → Model Evaluation → Model Selection → Model 
+Registry 
+D. Deployment 
+Explain how the trained model will be deployed. 
+You may consider: 
+• REST API 
+• Batch deployment 
+• Real-time deployment 
+• Edge deployment 
+• Cloud deployment 
+• Docker/containerization 
+E. Monitoring 
+Identify what should be monitored after deployment. 
+For example: 
+• Model accuracy 
+• Precision 
+• Recall 
+• Latency 
+• Data drift 
+• Prediction drift 
+• System performance 
+• Business KPI 
+F. Retraining 
+Explain: 
+• When should the model be retrained? 
+• What new data will be used? 
+• How will the new model be evaluated? 
+• Who/what will approve the new model? 
+
+=== PAGE 7 ===
+G. Versioning and Rollback 
+Explain how you would maintain: 
+• Dataset versions 
+• Code versions 
+• Model versions 
+• Pipeline versions 
+Also explain what happens if the newly deployed model performs poorly. 
+ 
+4. Mandatory Architecture Diagram 
+Each student/group must create an end-to-end MLOps architecture diagram. 
+The diagram should contain, wherever applicable: 
+Data Sources 
+     ↓ 
+Data Ingestion 
+     ↓ 
+Data Storage 
+     ↓ 
+Data Preprocessing 
+     ↓ 
+Feature Engineering 
+     ↓ 
+Model Training 
+     ↓ 
+Model Evaluation 
+     ↓ 
+Model Registry 
+     ↓ 
+CI/CD Pipeline 
+     ↓ 
+Model Deployment 
+     ↓ 
+Prediction 
+     ↓ 
+Monitoring 
+     ↓ 
+Feedback / New Data 
+     ↓ 
+Model Retraining 
+Students should modify the architecture according to their selected scenario. 
+ 
+5. Tools and Technologies 
+
+=== PAGE 8 ===
+Students may propose suitable MLOps tools such as: 
+• Python 
+• Scikit-learn 
+• TensorFlow / PyTorch 
+• Git / GitHub 
+• Docker 
+• MLflow 
+• FastAPI / Flask 
+• Apache Airflow 
+• Kubernetes 
+• AWS / Microsoft Azure / Google Cloud 
+• Prometheus / Grafana 
+• DVC 
+Note: Students do not need to use every tool. They should justify why a particular tool is 
+appropriate for their selected scenario. 
+ 
+6. Expected Deliverables 
+Each student/group must submit: 
+1. Case Study Report 
+Recommended length: 5–8 pages 
+The report should contain: 
+1. Title 
+2. Problem Statement 
+3. Business Scenario 
+4. Data Description 
+5. Proposed ML Approach 
+6. MLOps Pipeline 
+7. Deployment Strategy 
+8. Monitoring Strategy 
+9. Retraining Strategy 
+10. Versioning and Rollback 
+11. Architecture Diagram 
+12. Expected Challenges 
+13. Conclusion 
+14. References 
+2. Architecture Diagram 
+A clear end-to-end MLOps workflow diagram must be included. 
+
+=== PAGE 9 ===
+3. Optional Implementation 
+Students may implement a small prototype using Python, MLflow, Docker, FastAPI, GitHub, 
+or other suitable tools. 
+Implementation is encouraged but the primary focus of this assignment is the MLOps 
+design and case-study analysis. 
+ 
+7. Important Instructions 
+1. Select only ONE scenario. 
+2. The solution should focus on MLOps, not only on ML model development. 
+3. Clearly explain why your proposed deployment and MLOps strategy is suitable. 
+4. Include an end-to-end architecture diagram. 
+5. Avoid copying the reference article directly. Your solution must be your own 
+analysis and design. 
+6. Clearly mention all external sources used. 
+7. AI tools may be used for learning and brainstorming, but students must understand 
+and explain their submitted work. 
+8. Ensure that the report is properly formatted and submitted before the deadline. 
+ 
+Submission Deadline 
+10 September 2026, 5:00 PM 
+Late submissions may be subject to the course/instructor's late-submission policy. 
+ 
+Reference 
+Students may refer to the following article for understanding real-world MLOps use cases: 
+“MLOps Use Cases: 12 Practical Examples Teams Run in Production” – DEV 
+Community 
+Reference Article – MLOps Use Cases 
+The reference discusses how production ML systems require more than model training, 
+including versioning, CI/CD, deployment, monitoring, feedback loops, governance, and 
+retraining. 
+ 
+
