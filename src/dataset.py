@@ -23,10 +23,12 @@ class CIFAKEDatasetLoader:
     def __init__(
         self,
         dataset_name: Optional[str] = None,
+        revision: Optional[str] = None,
         cache_dir: Optional[Path] = None,
         random_seed: int = 42,
     ):
         self.dataset_name = dataset_name or settings.dataset_name
+        self.revision = revision or settings.dataset_revision
         self.cache_dir = cache_dir or settings.data_dir
         self.random_seed = random_seed
         self.cache_dir.mkdir(parents=True, exist_ok=True)
@@ -39,7 +41,7 @@ class CIFAKEDatasetLoader:
         """
         Loads images and binary labels (0=REAL, 1=AI_GENERATED).
         If Hugging Face is unreachable or in offline mode, generates
-        a deterministic synthetic bootstrap set for testing/development.
+        a deterministic local synthetic validation samples.
 
         Args:
             sample_size: Total images to load. None or <= 0 loads full split.
@@ -52,9 +54,14 @@ class CIFAKEDatasetLoader:
             from datasets import load_dataset as hf_load_dataset
 
             logger.info(
-                f"Loading '{self.dataset_name}' (split={split}) from Hugging Face / local cache..."
+                f"Loading '{self.dataset_name}' (split={split}, rev={self.revision}) from Hugging Face / local cache..."
             )
-            ds = hf_load_dataset(self.dataset_name, split=split, cache_dir=str(self.cache_dir))
+            ds = hf_load_dataset(
+                self.dataset_name,
+                split=split,
+                cache_dir=str(self.cache_dir),
+                revision=self.revision,
+            )
             images = [item["image"] for item in ds]
             labels = np.array([int(item["label"]) for item in ds], dtype=np.int64)
             logger.info(f"Loaded {len(images)} images from Hugging Face dataset.")

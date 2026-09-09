@@ -1,6 +1,7 @@
 """
 Web scraper module for extracting and deduplicating images from web pages.
-Includes SSRF protection, perceptual hashing (pHash/dHash), and manifest generation.
+Includes SSRF protection with redirect validation, perceptual hashing (pHash/dHash),
+and manifest generation.
 """
 
 import ipaddress
@@ -26,12 +27,14 @@ class SSRFSecurityError(ValueError):
 def validate_url_security(url: str, denied_hosts: Optional[List[str]] = None) -> str:
     """
     Validates that a URL is safe to fetch (prevents SSRF attacks).
-    - Checks HTTP / HTTPS schemes.
+    - Checks HTTP / HTTPS schemes only.
     - Resolves hostname to IP and verifies it is not in private/loopback/reserved blocks.
     """
     parsed = urlparse(url)
     if parsed.scheme not in ("http", "https"):
-        raise SSRFSecurityError(f"Prohibited URL scheme: '{parsed.scheme}'. Only http and https are allowed.")
+        raise SSRFSecurityError(
+            f"Prohibited URL scheme: '{parsed.scheme}'. Only http and https are allowed."
+        )
 
     hostname = parsed.hostname
     if not hostname:
@@ -41,7 +44,7 @@ def validate_url_security(url: str, denied_hosts: Optional[List[str]] = None) ->
     if hostname.lower() in [h.lower() for h in denied]:
         raise SSRFSecurityError(f"Access to denied host '{hostname}' is blocked.")
 
-    # Resolve IP address to prevent DNS rebinding to local interfaces
+    # Resolve IP address to prevent DNS rebinding or localhost escapes
     try:
         addr_info = socket.getaddrinfo(hostname, None)
     except socket.gaierror as e:
@@ -64,6 +67,47 @@ def validate_url_security(url: str, denied_hosts: Optional[List[str]] = None) ->
     return url
 
 
+def safe_http_get(
+    session: requests.Session,
+    url: str,
+    max_redirects: Optional[int] = None,
+    timeout: int = 10,
+    stream: bool = True,
+) -> requests.Response:
+    """
+    Performs HTTP GET with manual redirect validation at each hop to prevent SSRF via open redirect.
+    """
+    max_redirs = max_redirects or settings.max_redirects
+    current_url = url
+    redirect_count = 0
+
+    while True:
+        validate_url_security(current_url)
+
+        resp = session.get(
+            current_url,
+            timeout=timeout,
+            stream=stream,
+            allow_redirects=False,
+        )
+
+        if resp.is_redirect or resp.status_code in (301, 302, 303, 307, 308):
+            redirect_count += 1
+            if redirect_count > max_redirs:
+                raise SSRFSecurityError(f"Exceeded maximum allowed redirects ({max_redirs}).")
+
+            location = resp.headers.get("Location")
+            if not location:
+                raise SSRFSecurityError("Redirect missing Location header.")
+
+            next_url = urljoin(current_url, location)
+            logger.debug(f"Validating redirect hop {redirect_count}: {current_url} -> {next_url}")
+            current_url = next_url
+            continue
+
+        return resp
+
+
 def extract_candidate_image_urls(html_content: str, base_url: str) -> List[str]:
     """
     Parses HTML to find all candidate image URLs from <img> tags, data attributes, and <source> tags.
@@ -81,7 +125,6 @@ def extract_candidate_image_urls(html_content: str, base_url: str) -> List[str]:
         for attr in ["data-src", "data-original", "data-lazy-src", "data-srcset"]:
             val = img.get(attr)
             if val and not val.startswith("data:"):
-                # Take first URL if srcset
                 first_url = val.strip().split(",")[0].split()[0]
                 found_urls.add(urljoin(base_url, first_url))
 
@@ -109,7 +152,7 @@ class WebpageImageScraper:
     ):
         self.max_images = max_images
         self.timeout = timeout
-        self.output_base_dir = output_base_dir or settings.temp_dir
+        self.output_base_dir = (output_base_dir or settings.temp_dir).resolve()
         self.output_base_dir.mkdir(parents=True, exist_ok=True)
         self.session = requests.Session()
         self.session.headers.update({"User-Agent": settings.user_agent})
@@ -118,15 +161,9 @@ class WebpageImageScraper:
         """
         Scrapes all images from a webpage, deduplicates them using perceptual hashing,
         and saves a manifest.json.
-
-        Returns:
-            Tuple of (manifest_records, session_output_dir).
         """
-        # Validate security
-        validate_url_security(page_url)
-
         logger.info(f"Scraping webpage: {page_url}")
-        resp = self.session.get(page_url, timeout=self.timeout, stream=True)
+        resp = safe_http_get(self.session, page_url, timeout=self.timeout, stream=True)
         resp.raise_for_status()
 
         # Read HTML with size cap (10MB max)
@@ -145,7 +182,7 @@ class WebpageImageScraper:
 
         # Create session directory
         session_id = compute_sha256(page_url.encode("utf-8"))[:12]
-        session_dir = self.output_base_dir / f"scrape_{session_id}"
+        session_dir = (self.output_base_dir / f"scrape_{session_id}").resolve()
         session_dir.mkdir(parents=True, exist_ok=True)
 
         manifest = self._download_and_deduplicate(candidate_urls, session_dir)
@@ -167,18 +204,21 @@ class WebpageImageScraper:
         import imagehash
 
         manifest: List[Dict[str, Any]] = []
-        known_hashes: List[Tuple[Any, str]] = []  # List of (phash_obj, filename)
+        known_hashes: List[Tuple[Any, str]] = []
 
         for url in urls[: self.max_images * 2]:
             if len(manifest) >= self.max_images:
                 break
 
             try:
-                # Verify security for each image link
-                validate_url_security(url)
-
-                img_resp = self.session.get(url, timeout=self.timeout, stream=True)
+                img_resp = safe_http_get(self.session, url, timeout=self.timeout, stream=True)
                 if img_resp.status_code != 200:
+                    continue
+
+                # Verify Content-Type matches image MIME
+                content_type = img_resp.headers.get("Content-Type", "").lower().split(";")[0].strip()
+                if content_type and not content_type.startswith("image/"):
+                    logger.debug(f"Skipping non-image Content-Type '{content_type}' for {url}.")
                     continue
 
                 # Stream image bytes with 15MB limit
@@ -216,10 +256,15 @@ class WebpageImageScraper:
                 if is_duplicate:
                     continue
 
-                # Unique image - save to disk
+                # Unique image - save to disk safely
                 sha256_val = compute_sha256(raw_bytes)
                 file_name = f"img_{len(manifest):03d}_{sha256_val[:8]}.jpg"
-                file_path = output_dir / file_name
+                file_path = (output_dir / file_name).resolve()
+
+                # Guard against path traversal
+                if not file_path.is_relative_to(output_dir):
+                    raise ValueError("Resolved file path escapes output directory.")
+
                 pil_img.save(file_path, format="JPEG", quality=95)
 
                 known_hashes.append((phash, file_name))

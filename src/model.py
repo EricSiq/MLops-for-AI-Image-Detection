@@ -22,9 +22,11 @@ class CLIPFeatureExtractor:
     def __init__(
         self,
         model_name: Optional[str] = None,
+        revision: Optional[str] = None,
         device: Optional[str] = None,
     ):
         self.model_name = model_name or settings.clip_model_name
+        self.revision = revision or settings.clip_revision
         self.device = self._determine_device(device)
         self._model = None
         self._processor = None
@@ -60,10 +62,12 @@ class CLIPFeatureExtractor:
         from transformers import CLIPProcessor, CLIPVisionModelWithProjection
 
         logger.info(
-            f"Loading CLIP vision backbone '{self.model_name}' on device='{self.device}'..."
+            f"Loading CLIP vision backbone '{self.model_name}' (rev='{self.revision}') on device='{self.device}'..."
         )
-        self._processor = CLIPProcessor.from_pretrained(self.model_name)
-        self._model = CLIPVisionModelWithProjection.from_pretrained(self.model_name)
+        self._processor = CLIPProcessor.from_pretrained(self.model_name, revision=self.revision)
+        self._model = CLIPVisionModelWithProjection.from_pretrained(
+            self.model_name, revision=self.revision
+        )
         self._model.to(self.device)
         self._model.eval()
 
