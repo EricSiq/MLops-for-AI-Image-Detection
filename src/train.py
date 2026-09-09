@@ -169,14 +169,23 @@ def run_training(
         mlflow.log_artifact(str(cm_path), artifact_path="evaluation_plots")
         mlflow.log_artifact(str(roc_path), artifact_path="evaluation_plots")
 
-        # Save local joblib model
+        # Save local joblib model with checksum
         model_save_path = classifier.save(settings.joblib_model_path)
+
+        # Infer model signature for schema enforcement
+        from mlflow.models.signature import infer_signature
+
+        signature = infer_signature(
+            X_train[:5], classifier.model.predict_proba(X_train[:5])
+        )
 
         # Log model to MLflow model registry
         mlflow.sklearn.log_model(
             sk_model=classifier.model,
             artifact_path="classifier_model",
             registered_model_name=settings.mlflow_model_name,
+            signature=signature,
+            input_example=X_train[:2],
         )
 
         logger.info(f"MLflow Run ID: {run.info.run_id} completed successfully.")

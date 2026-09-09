@@ -86,6 +86,8 @@ class Settings(BaseSettings):
     api_version: str = "0.1.0"
 
     # Monitoring Settings
+    drift_pvalue_threshold: float = 0.05
+    drift_share_threshold: float = 0.20
     drift_report_html: Path = PROJECT_ROOT / "reports" / "drift_report.html"
     drift_metrics_json: Path = PROJECT_ROOT / "reports" / "drift_metrics.json"
 

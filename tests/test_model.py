@@ -46,3 +46,24 @@ def test_classifier_save_and_load(tmp_path, dummy_embeddings):
     preds_original = clf.predict(X)
     preds_loaded = loaded_clf.predict(X)
     np.testing.assert_array_equal(preds_original, preds_loaded)
+
+
+def test_classifier_checksum_tamper_detection(tmp_path, dummy_embeddings):
+    """Verify that tampering with model file triggers SHA256 integrity failure."""
+    X, y = dummy_embeddings
+    clf = AIImageClassifier(C=1.0)
+    clf.fit(X, y)
+
+    save_file = tmp_path / "model.joblib"
+    clf.save(save_file)
+
+    sha_file = tmp_path / "model.joblib.sha256"
+    assert sha_file.exists()
+
+    # Tamper with model file bytes
+    with open(save_file, "ab") as f:
+        f.write(b"CORRUPTED_BYTES")
+
+    # Attempting to load must raise ValueError
+    with pytest.raises(ValueError, match="Model integrity verification failed"):
+        AIImageClassifier().load(save_file, verify_checksum=True)

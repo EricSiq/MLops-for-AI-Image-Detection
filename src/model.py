@@ -154,18 +154,42 @@ class AIImageClassifier:
         return self.model.predict_proba(X)
 
     def save(self, filepath: Union[str, Path]) -> Path:
-        """Saves model artifact using joblib."""
+        """Saves model artifact using joblib and writes SHA256 checksum for integrity verification."""
         filepath = Path(filepath)
         filepath.parent.mkdir(parents=True, exist_ok=True)
         joblib.dump(self.model, filepath)
-        logger.info(f"Model successfully saved to {filepath}.")
+
+        from src.utils import compute_file_sha256
+
+        sha256_hash = compute_file_sha256(filepath)
+        sha_file = filepath.with_suffix(filepath.suffix + ".sha256")
+        with open(sha_file, "w", encoding="utf-8") as f:
+            f.write(sha256_hash)
+
+        logger.info(f"Model successfully saved to {filepath} (SHA256: {sha256_hash[:12]}...).")
         return filepath
 
-    def load(self, filepath: Union[str, Path]) -> "AIImageClassifier":
-        """Loads model artifact from disk."""
+    def load(
+        self, filepath: Union[str, Path], verify_checksum: bool = True
+    ) -> "AIImageClassifier":
+        """Loads model artifact from disk with cryptographic checksum verification."""
         filepath = Path(filepath)
         if not filepath.exists():
             raise FileNotFoundError(f"Model file not found at {filepath}")
+
+        if verify_checksum:
+            sha_file = filepath.with_suffix(filepath.suffix + ".sha256")
+            if sha_file.exists():
+                from src.utils import compute_file_sha256
+
+                expected_hash = sha_file.read_text(encoding="utf-8").strip()
+                actual_hash = compute_file_sha256(filepath)
+                if expected_hash != actual_hash:
+                    raise ValueError(
+                        f"Model integrity verification failed! Expected {expected_hash}, got {actual_hash}"
+                    )
+                logger.info("Model SHA256 integrity check passed.")
+
         self.model = joblib.load(filepath)
         self.is_fitted = True
         logger.info(f"Loaded classifier from {filepath}.")
