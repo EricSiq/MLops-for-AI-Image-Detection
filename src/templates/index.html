@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VERTEX // AI Image Forensics Studio & MLOps Pipeline</title>
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  
+  <!-- Chart.js for deep frequency artifact spectrum plotting -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  
+  <!-- Custom Design System -->
+  <link rel="stylesheet" href="/static/css/dashboard.css">
+</head>
+<body>
+  <div class="app-container">
+    
+    <!-- Top Bar Navigation -->
+    <header class="top-nav">
+      <div class="brand-section">
+        <div class="brand-logo">🛡️</div>
+        <div>
+          <div class="brand-title">VERTEX FORENSICS</div>
+          <div style="font-size: 0.725rem; color: var(--text-tertiary); font-family: var(--font-mono);">
+            LOCAL MLOPS IMAGE DETECTOR
+          </div>
+        </div>
+        <span class="brand-badge">v0.2-PRODUCTION</span>
+      </div>
+
+      <div class="telemetry-strip">
+        <div class="telemetry-pill">
+          <span class="status-dot"></span>
+          <span id="pillEngine">ONNX RUNTIME</span>
+        </div>
+        <div class="telemetry-pill">
+          <span>BACKBONE:</span>
+          <strong style="color: var(--text-primary);">CLIP-ViT-B/32</strong>
+        </div>
+        <div class="telemetry-pill">
+          <span>DEVICE:</span>
+          <span id="pillDevice" style="color: var(--brand-cyan);">AUTO</span>
+        </div>
+        <div class="telemetry-pill">
+          <span>MODEL REGISTRY:</span>
+          <span style="color: var(--brand-indigo);">ai-image-detector-clip:v1</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Subheader Tabs -->
+    <nav class="tab-navigation">
+      <button class="tab-btn active" data-tab="tabWebScraper">
+        <span>🌐</span> Webpage Inspector
+      </button>
+      <button class="tab-btn" data-tab="tabForensicStudio">
+        <span>🔬</span> Forensic Studio & Dropzone
+      </button>
+      <button class="tab-btn" data-tab="tabTelemetry">
+        <span>📊</span> MLOps Telemetry & Drift Hub
+      </button>
+    </nav>
+
+    <!-- TAB 1: WEBPAGE INSPECTOR -->
+    <div id="tabWebScraper" class="tab-panel active">
+      <div class="control-card">
+        <div class="input-row">
+          <div class="url-input-wrapper">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="2" y1="12" x2="22" y2="12"></line>
+              <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+            </svg>
+            <input 
+              type="url" 
+              id="webpageUrl" 
+              class="custom-input" 
+              placeholder="Enter target webpage URL to extract & classify images (e.g., https://unsplash.com/t/nature)..." 
+              required 
+            />
+          </div>
+
+          <select id="maxImagesSelect" class="select-dropdown" style="padding: 0.85rem 1rem;">
+            <option value="15">Extract up to 15 images</option>
+            <option value="30" selected>Extract up to 30 images</option>
+            <option value="50">Extract up to 50 images</option>
+          </select>
+
+          <button id="btnAnalyze" class="btn-cta" onclick="startWebAnalysis()">
+            <span>⚡</span>
+            <span>Inspect Webpage</span>
+          </button>
+        </div>
+
+        <!-- Curated Preset Chips -->
+        <div class="presets-strip">
+          <span>Quick Test Presets:</span>
+          <button class="preset-chip" data-url="https://en.wikipedia.org/wiki/Artificial_intelligence">
+            Wikipedia AI Article (Real & Diagram Mix)
+          </button>
+          <button class="preset-chip" data-url="https://unsplash.com/t/nature">
+            Unsplash Nature (Authentic Photography)
+          </button>
+          <button class="preset-chip" data-url="https://lexica.art">
+            Lexica Art (Synthetic Generative Gallery)
+          </button>
+        </div>
+      </div>
+
+      <!-- Loading State -->
+      <div id="loadingState" class="state-container" style="display: none;">
+        <div style="font-size: 2rem; margin-bottom: 0.75rem;">⚡</div>
+        <p style="font-size: 1.05rem; color: var(--text-primary); font-weight: 500;">
+          Scraping target webpage, deduplicating via perceptual hashing, and running CLIP ONNX inference...
+        </p>
+        <p style="font-size: 0.8rem; color: var(--text-tertiary); margin-top: 0.25rem;">
+          Extracting 2D Fourier power spectra and calibrating confidence scores
+        </p>
+      </div>
+
+      <!-- Statistics Dashboard Bar -->
+      <div id="statsGrid" class="stats-grid" style="display: none;">
+        <div class="stat-box total">
+          <div class="stat-title">Total Analyzed</div>
+          <div id="statTotal" class="stat-num" style="color: var(--text-primary);">0</div>
+        </div>
+        <div class="stat-box ai">
+          <div class="stat-title">Synthetic AI-Generated</div>
+          <div id="statAI" class="stat-num" style="color: var(--ai-danger);">0</div>
+        </div>
+        <div class="stat-box real">
+          <div class="stat-title">Authentic Natural</div>
+          <div id="statReal" class="stat-num" style="color: var(--real-success);">0</div>
+        </div>
+        <div class="stat-box latency">
+          <div class="stat-title">Average Latency</div>
+          <div id="statLatency" class="stat-num" style="color: var(--brand-cyan);">0ms</div>
+        </div>
+      </div>
+
+      <!-- Filter & Actions Bar -->
+      <div id="controlsBar" class="controls-bar">
+        <div class="filter-group">
+          <button class="filter-btn active" onclick="setFilter('all', this)">All Samples</button>
+          <button class="filter-btn" onclick="setFilter('ai', this)">Synthetic Only</button>
+          <button class="filter-btn" onclick="setFilter('real', this)">Authentic Only</button>
+          <button class="filter-btn" onclick="setFilter('uncertain', this)">Uncertain (40-60%)</button>
+          <button class="filter-btn" onclick="setFilter('high_conf', this)">High Confidence (>85%)</button>
+        </div>
+
+        <div class="actions-group">
+          <input 
+            type="text" 
+            placeholder="Search URL or SHA256..." 
+            class="custom-input" 
+            style="width: 220px; padding: 0.45rem 0.85rem; font-size: 0.8rem;" 
+            oninput="onSearchInput(event)"
+          />
+          <select class="select-dropdown" onchange="onSortChange(event)">
+            <option value="ai_desc">Sort: Highest AI Probability</option>
+            <option value="ai_asc">Sort: Lowest AI Probability</option>
+            <option value="conf_desc">Sort: Highest Confidence</option>
+            <option value="size_desc">Sort: Resolution Size</option>
+          </select>
+          <button class="btn-secondary" onclick="exportJSON()">
+            <span>💾</span> JSON
+          </button>
+          <button class="btn-secondary" onclick="exportCSV()">
+            <span>📊</span> CSV
+          </button>
+        </div>
+      </div>
+
+      <!-- Forensic Card Gallery -->
+      <div id="galleryGrid" class="gallery-grid">
+        <div class="state-container" style="grid-column: 1 / -1;">
+          <p>Ready to inspect. Enter a webpage URL above or click one of the quick test presets.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 2: FORENSIC STUDIO DROPZONE -->
+    <div id="tabForensicStudio" class="tab-panel">
+      <div class="control-card">
+        <h2 style="font-size: 1.25rem; font-weight: 700; margin-bottom: 0.5rem;">
+          Direct Multi-Image Forensic Upload
+        </h2>
+        <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 1.5rem;">
+          Drag and drop local image files for instantaneous parallel feature extraction, 2D Fourier decomposition, and calibrated inference.
+        </p>
+
+        <div id="dropzone" class="dropzone">
+          <div class="dropzone-icon">📁</div>
+          <h3 id="dropzoneText" style="font-size: 1.1rem; font-weight: 600; margin-bottom: 0.4rem;">
+            Drag & drop image files here, or click to browse
+          </h3>
+          <p style="font-size: 0.8rem; color: var(--text-tertiary);">
+            Supports PNG, JPEG, WebP, AVIF • Up to 15MB per image • Safe local processing
+          </p>
+          <input type="file" id="fileInput" multiple accept="image/png, image/jpeg, image/webp" style="display: none;" />
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 3: MLOPS TELEMETRY & DRIFT HUB -->
+    <div id="tabTelemetry" class="tab-panel">
+      <div class="control-card" style="margin-bottom: 1.5rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+          <div>
+            <h2 style="font-size: 1.25rem; font-weight: 700;">Continuous Model & Data Drift Monitoring</h2>
+            <p style="color: var(--text-secondary); font-size: 0.875rem;">
+              Powered by Evidently AI • Two-sample Kolmogorov-Smirnov & Wasserstein Distance metrics
+            </p>
+          </div>
+          <div style="display: flex; gap: 0.75rem; align-items: center;">
+            <span id="driftStatusBadge" class="brand-badge real">STABLE</span>
+            <a href="/reports/drift" target="_blank" class="btn-secondary">
+              Open Fullscreen Report ↗
+            </a>
+          </div>
+        </div>
+
+        <div class="stats-grid" style="margin-bottom: 1.5rem;">
+          <div class="stat-box">
+            <div class="stat-title">Drift Share</div>
+            <div id="driftShare" class="stat-num" style="color: var(--brand-cyan);">0.0%</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-title">Mean Wasserstein Dist</div>
+            <div id="driftDist" class="stat-num" style="color: var(--brand-indigo);">0.21</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-title">Active Registry Version</div>
+            <div class="stat-num" style="color: var(--text-primary); font-size: 1.4rem; padding-top: 0.4rem;">
+              v1 (Production)
+            </div>
+          </div>
+        </div>
+
+        <!-- Embedded Evidently HTML Report -->
+        <div style="border-radius: var(--radius-md); overflow: hidden; border: 1px solid var(--border-subtle); height: 600px; background: #0b0f19;">
+          <iframe id="driftReportFrame" src="/reports/drift" style="width: 100%; height: 100%; border: none;"></iframe>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- DEEP INSPECTION MODAL -->
+  <div id="inspectorModal" class="modal-overlay">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div>
+          <div style="font-size: 0.75rem; font-family: var(--font-mono); color: var(--text-tertiary);">
+            FORENSIC SAMPLE DEEP DIVE
+          </div>
+          <div id="modalVerdict" style="font-size: 1.2rem; font-weight: 700; color: var(--ai-danger);">
+            SYNTHETIC AI-GENERATED
+          </div>
+        </div>
+        <button id="modalCloseBtn" class="modal-close-btn">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <!-- Left: Image & Frequency Switcher -->
+        <div>
+          <div class="preview-switch-row">
+            <button id="btnView_rgb" class="view-toggle-btn active" onclick="setInspectorView('rgb')">
+              RGB Natural Image
+            </button>
+            <button id="btnView_fft" class="view-toggle-btn" onclick="setInspectorView('fft')">
+              2D Fourier Power Spectrum (Artifact Heatmap)
+            </button>
+          </div>
+          <div class="inspector-stage">
+            <img id="inspectorImage" src="" alt="Forensic inspection view" />
+          </div>
+          <div style="font-size: 0.75rem; color: var(--text-tertiary); margin-top: 0.5rem; text-align: center;">
+            Toggle between RGB visual and 2D FFT to spot high-frequency checkerboard grid anomalies.
+          </div>
+        </div>
+
+        <!-- Right: Probabilities, Frequency Curve & Metadata -->
+        <div>
+          <h3 style="font-size: 1rem; font-weight: 600; margin-bottom: 0.75rem;">
+            Classification Verdict & Probability Distribution
+          </h3>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.75rem; margin-bottom: 1.25rem;">
+            <div style="background: var(--bg-input); padding: 0.75rem; border-radius: var(--radius-sm); text-align: center;">
+              <div style="font-size: 0.7rem; color: var(--text-tertiary); font-family: var(--font-mono);">AI PROBABILITY</div>
+              <div id="modalAiProb" style="font-size: 1.2rem; font-weight: 700; color: var(--ai-danger); margin-top: 0.2rem;">0%</div>
+            </div>
+            <div style="background: var(--bg-input); padding: 0.75rem; border-radius: var(--radius-sm); text-align: center;">
+              <div style="font-size: 0.7rem; color: var(--text-tertiary); font-family: var(--font-mono);">REAL PROBABILITY</div>
+              <div id="modalRealProb" style="font-size: 1.2rem; font-weight: 700; color: var(--real-success); margin-top: 0.2rem;">0%</div>
+            </div>
+            <div style="background: var(--bg-input); padding: 0.75rem; border-radius: var(--radius-sm); text-align: center;">
+              <div style="font-size: 0.7rem; color: var(--text-tertiary); font-family: var(--font-mono);">CONFIDENCE</div>
+              <div id="modalConfidence" style="font-size: 1.2rem; font-weight: 700; color: var(--brand-indigo); margin-top: 0.2rem;">0%</div>
+            </div>
+          </div>
+
+          <!-- Chart.js Radial Profile -->
+          <div style="margin-bottom: 1.25rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
+              <span style="font-size: 0.8rem; font-weight: 600;">Azimuthal Radial Power Spectrum (32 Rings)</span>
+              <span style="font-size: 0.7rem; color: var(--brand-cyan); font-family: var(--font-mono);">DC Low → Nyquist High</span>
+            </div>
+            <div style="height: 160px; background: var(--bg-input); border-radius: var(--radius-sm); padding: 0.5rem;">
+              <canvas id="fftChartCanvas"></canvas>
+            </div>
+          </div>
+
+          <!-- Cryptographic Metadata Table -->
+          <table class="meta-table">
+            <tr><td class="key">Dimensions</td><td id="metaDim">Standardized</td></tr>
+            <tr><td class="key">SHA-256 Checksum</td><td id="metaSha" style="word-break: break-all;">N/A</td></tr>
+            <tr><td class="key">Inference Latency</td><td id="metaLatency">~35 ms</td></tr>
+            <tr><td class="key">Source Identifier</td><td id="metaSourceUrl" style="word-break: break-all;">Direct Upload</td></tr>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dashboard JavaScript Engine -->
+  <script src="/static/js/dashboard.js"></script>
+</body>
+</html>

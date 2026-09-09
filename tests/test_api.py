@@ -28,7 +28,7 @@ def test_ui_endpoint(client):
     resp = client.get("/")
     assert resp.status_code == 200
     assert "text/html" in resp.headers["content-type"]
-    assert "AI-Generated Image Detector" in resp.text
+    assert "VERTEX" in resp.text
 
 
 def test_analyze_rejects_ssrf(client):
@@ -50,3 +50,37 @@ def test_predict_single_image_upload(client, sample_image_bytes):
     assert "real_probability" in data
     assert "confidence" in data
     assert "fft_spectrum" in data
+    assert "fft_heatmap" in data
+    assert "latency_ms" in data
+
+
+def test_predict_batch_images(client, sample_image_bytes):
+    """Verify batch multi-image upload endpoint."""
+    files = [
+        ("files", ("img1.jpg", sample_image_bytes, "image/jpeg")),
+        ("files", ("img2.jpg", sample_image_bytes, "image/jpeg")),
+    ]
+    resp = client.post("/predict-batch", files=files)
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["total"] == 2
+    assert len(data["results"]) == 2
+    assert "label" in data["results"][0]
+    assert "fft_heatmap" in data["results"][0]
+
+
+def test_monitoring_status_endpoint(client):
+    """Verify /monitoring/status returns drift statistics."""
+    resp = client.get("/monitoring/status")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert "drift_detected" in data
+    assert "mean_wasserstein_distance" in data
+
+
+def test_drift_report_html_endpoint(client):
+    """Verify /reports/drift serves HTML report."""
+    resp = client.get("/reports/drift")
+    assert resp.status_code == 200
+    assert "text/html" in resp.headers["content-type"]
+    assert len(resp.text) > 100
