@@ -1,0 +1,50 @@
+# Python & Virtual Environments
+.venv/
+venv/
+env/
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+
+# Data & Datasets
+data/*
+!data/.gitkeep
+cache/
+*.cache
+temp/
+scraped_images/
+*.png
+*.jpg
+*.jpeg
+*.webp
+!src/static/**/*
+!tests/fixtures/**/*
+
+# Models & Artifacts
+models/*
+!models/.gitkeep
+
+mlruns/
+.mlruns/
+reports/
+drift_reports/
+
+# IDE & OS
+.vscode/
+.idea/
+*.swp
+*~
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Environment variables & secrets
+.env
+.env.local
+*.secret

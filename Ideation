@@ -1,0 +1,126 @@
+PROJECT: AI-Generated Image Detector — Local MLOps Pipeline
+VERSION: v0.1 Design Brief
+SCOPE: Local deployment only. No cloud infra, no distributed training.
+
+------------------------------------------------------------
+1. OBJECTIVE
+------------------------------------------------------------
+Given a webpage URL, extract all images, classify each as
+AI-generated vs real, return a confidence score. Wrapped in a
+minimal MLOps loop (train -> track -> serve -> monitor) that
+runs entirely on one machine (CPU or single GPU).
+
+------------------------------------------------------------
+2. DATA
+------------------------------------------------------------
+- Dataset: CIFAKE (real vs AI-generated, ~120k images, small)
+- Source: HuggingFace `datasets` library (auto-caches locally)
+- No manual download/hosting needed
+- Split: use provided train/test split as-is for v0.1
+
+------------------------------------------------------------
+3. PREPROCESSING
+------------------------------------------------------------
+- Resize + normalize: torchvision.transforms
+- (Optional v0.2) FFT-based frequency artifact feature via numpy.fft
+- Keep preprocessing as a single pure function -> easy to unit test
+  and reuse identically at train time and inference time
+
+------------------------------------------------------------
+4. MODEL
+------------------------------------------------------------
+- Backbone: CLIP image encoder (open_clip or transformers), frozen
+- Head: scikit-learn LogisticRegression on CLIP embeddings
+- Rationale: no GPU fine-tuning required, trains in seconds,
+  strong baseline for synthetic image detection
+- Fallback if accuracy insufficient: fine-tune timm efficientnet-b0
+
+------------------------------------------------------------
+5. TRAINING SCRIPT (train.py)
+------------------------------------------------------------
+Steps:
+  1. Load CIFAKE via datasets
+  2. Extract CLIP embeddings for train/test images
+  3. Fit LogisticRegression on embeddings
+  4. Evaluate (accuracy, F1, confusion matrix)
+  5. Log run to MLflow (params, metrics, model artifact)
+  6. Register model in local MLflow model registry if metrics
+     beat current "production" tag
+
+------------------------------------------------------------
+6. EXPERIMENT TRACKING
+------------------------------------------------------------
+- Tool: MLflow, local file-store backend (no server process)
+- Tracked: hyperparams, accuracy/F1, model artifact, dataset version tag
+- UI: `mlflow ui` command, local browser access only
+
+------------------------------------------------------------
+7. WEBPAGE IMAGE EXTRACTION (scrape.py)
+------------------------------------------------------------
+- Static pages: requests + BeautifulSoup, pull all <img> src URLs
+- JS-rendered pages: playwright (headless) as fallback if <img>
+  count is suspiciously low
+- Dedupe: imagehash (perceptual hash) before running inference
+- Output: local temp folder of downloaded images + manifest.json
+  (url, local path, hash)
+
+------------------------------------------------------------
+8. INFERENCE / SERVING (serve.py)
+------------------------------------------------------------
+- Load model: latest "production"-tagged model from MLflow registry
+- Export path (optional, faster local inference): ONNX via onnxruntime
+- API: FastAPI, single endpoint
+    POST /analyze  { "url": "<webpage>" }
+    -> runs scrape.py -> preprocess -> inference
+    -> returns JSON: [{image_url, ai_probability, label}]
+- Run locally: `uvicorn serve:app --reload`
+
+------------------------------------------------------------
+9. MONITORING (monitor.py, optional v0.2)
+------------------------------------------------------------
+- Tool: Evidently AI
+- Track: embedding drift of incoming webpage images vs training
+  distribution, prediction distribution over time
+- Output: local HTML drift report, generated on-demand (not a
+  live dashboard for v0.1)
+
+------------------------------------------------------------
+10. REPO STRUCTURE
+------------------------------------------------------------
+ai-image-detector/
+  data/              # cached datasets (gitignored)
+  models/            # exported ONNX / joblib artifacts
+  mlruns/            # MLflow local tracking store
+  src/
+    preprocess.py    # shared transform function
+    train.py         # training + MLflow logging
+    scrape.py         # webpage -> image manifest
+    serve.py          # FastAPI app
+    monitor.py         # (v0.2) drift report
+  requirements.txt
+  README.md
+
+------------------------------------------------------------
+11. CORE DEPENDENCIES
+------------------------------------------------------------
+datasets, open_clip (or transformers), scikit-learn, mlflow,
+beautifulsoup4, playwright, imagehash, onnxruntime, fastapi,
+uvicorn, evidently (optional, v0.2)
+
+------------------------------------------------------------
+12. BUILD ORDER (for vibe coding)
+------------------------------------------------------------
+1. preprocess.py + train.py -> get a working local model + MLflow run
+2. scrape.py -> confirm image extraction works on 2-3 test pages
+3. serve.py -> wire trained model into FastAPI endpoint, test end-to-end
+4. (only if needed) ONNX export for faster inference
+5. (v0.2) monitor.py drift reporting
+
+------------------------------------------------------------
+13. OUT OF SCOPE (v0.1)
+------------------------------------------------------------
+- Cloud deployment, containers, CI/CD pipelines
+- Distributed training, GPU clusters
+- Live monitoring dashboards
+- Multi-generator fine-grained classification (which model
+  generated it) — binary real/AI only for now
